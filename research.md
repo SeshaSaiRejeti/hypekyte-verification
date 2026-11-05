@@ -1,324 +1,101 @@
-# Business Verification API – Research Summary
+# Research summary: verifying Indian businesses
 
-## 1. Research Summary
+**Question:** which data sources can show that (a) a business exists and (b) the person registering it is associated with it, and
+which of them are practical for a prototype?
 
-| Method | API Available? | Pricing / Sandbox | Information Retrieved | Proves Business Existence? | Proves Applicant Association? | Decision |
-|---|---|---|---|---|---|---|
-| GSTIN Verification | Yes | Paid APIs; free sandbox options available | Legal name, trade name, GST status, registered address | Yes, supporting evidence | No | Use |
-| Google Places API | Yes | Monthly free usage limits; billing required | Business name, address, category, phone, website, ratings | Provides supporting evidence | No | Use as supporting verification |
-| Phone OTP | Yes | Paid SMS services generally required | Confirms access to a phone number | No | Partially | Use |
-| Business Email Verification | Yes | Can be free | Email and domain validity | No | Partially | Use as supporting verification |
+**Decision:** **gstinapi.in** (GST register) and **Google Places API (New)** as the two data sources, joined by **phone-control OTP**
+on a number one of those sources attributes to the business. Everything below marked ✅ was called live during this project.
+Marked ◻ means from public documentation only.
 
-## 2. Google Places API (New)
+---
 
-**Purpose:** Identify businesses through Google Maps listings and compare their publicly available information with submitted registration details.
+## 1. Comparison
 
-**API Details:**
-- API: Google Places API (New)
-- Method: Text Search
-- Endpoint: `POST https://places.googleapis.com/v1/places:searchText`
-- Authentication: Google API Key
-- Requirements: Google Cloud project and billing account.
+| Method | API? | Cost / sandbox | What it returns | Proves existence? | Proves association? | Integration | Used |
+|---|---|---|---|---|---|---|---|
+| **GSTIN, gstinapi.in** ✅ | REST, `x-api-key` | 75 free credits; packs ₹199/250 → ₹2,499/6,250 (₹0.80–0.40 per lookup); failed and not-found calls free; sandbox GSTIN free | legal and trade name, status, registration/cancellation date, taxpayer type, address + PIN + state code, nature of business, branches (`include=profile`) | **Yes**: government register | No (by itself) | Easy | **Yes** |
+| **GST contact, gstinapi.in `/contact`** ✅ (sandbox) | REST | **Paid accounts only**, 4–6 credits, charged even if empty | mobile + email filed with the GST registration | — | **Yes, strongest available**: OTP on the GST-filed mobile | Easy | **Simulated** (free tier) |
+| **Google Places API (New)** ✅ | REST, `X-Goog-Api-Key` + field mask | Billing account needed; India free caps per SKU/month: Text Search Pro 35k, Enterprise 7k; Essentials IDs unlimited | name, address components (PIN, state), location, types, business status, phone, website, rating, review count, Maps link | **Supporting**: public, operating presence | Only via its **published phone** + OTP | Easy | **Yes** |
+| Places Autocomplete (New) ✅ | REST | Per session (autocomplete + one Details call) | establishment predictions | — | — | Easy | **Yes** (search box) |
+| Places Nearby Search (New) ✅ | REST | Pro/Enterprise SKU | businesses around a coordinate | — | On-site presence (weak, spoofable) | Easy | **Yes** (on-site picker) |
+| GSTIN offline checksum ✅ | none | free | structural validity, state, PAN, holder type | No | No | Trivial | **Yes** |
+| FSSAI licence ◻ | No official public API. FoSCoS portal search is manual/captcha. Third-party KYC APIs (e.g. Surepass, Signzy, IDfy, Gridlines) are paid and need sales onboarding | licence no., FBO name, premises address, validity, category | **Yes** for food businesses | No | Medium (vendor onboarding) | Future |
+| MCA (CIN/LLPIN) ◻ | No free official API; MCA21 master data via portal. Third-party APIs paid | company status, incorporation date, registered office, **directors (DIN)** | **Yes** for companies/LLPs | Partially: director name vs applicant | Medium | Future |
+| Udyam (MSME) ◻ | Official verification is portal-based with OTP to the registrant; third-party APIs paid | enterprise name, type, address, activity | Yes | Partially (OTP to registrant) | Medium–hard | Future |
+| Phone OTP, SMS ◻ | Firebase Phone Auth needs the **Blaze (billing) plan** (since 2024), and test numbers need billing too. Indian SMS needs **DLT** template registration. 2Factor ≈ ₹0.12–0.15/SMS, Fast2SMS ≈ ₹0.11–0.25/SMS (+18% GST) | control of a number | No | **Yes, if the number is on record** | Easy code, slow DLT paperwork | **Simulated** sender |
+| Email OTP, Resend ◻ | Free: 3,000/month, 100/day; needs a verified domain | control of a mailbox | No | Yes if it's the GST-filed email or on the website's domain | Easy | Future |
+| Google Business Profile OAuth ◻ | OAuth, requires Google approval | which listings the Google account manages | — | **Yes, strong**: only the owner can grant it | Hard (app review) | Future |
 
-**Important Fields:**
+### Providers considered for GST
 
-| Field | Information |
-|---|---|
-| `places.id` | Unique place identifier |
-| `places.displayName` | Business name |
-| `places.formattedAddress` | Business address |
-| `places.types` | Business category |
-| `places.businessStatus` | Operational status |
-| `places.nationalPhoneNumber` | Publicly listed phone number |
-| `places.websiteUri` | Business website |
-
-**Pricing:**
-- Essentials (IDs Only): Unlimited free usage.
-- Pro: 35,000 free requests/month.
-- Enterprise: 7,000 free requests/month.
-- Billing account required, even when using free allowances.
-- Pricing depends on the highest-priced field requested.
-
-*Note: These are the researched India-specific pricing figures and should be reconfirmed before implementation.*
-
-**Limitations:**
-- Not every business has a Google Maps listing.
-- Business information may be outdated.
-- A matching listing does not prove applicant ownership or association.
-
-**Decision:** Use Google Places API as a supporting verification method to compare business names, addresses and publicly available contact details.
-
-## 3. GSTIN Verification API Providers
-
-GSTIN verification helps determine whether a business is registered under GST and retrieves its registered business information.
-
-### 3.1 FinAGG – Common GST Search API
-
-- API action: `SEARCHGSTIN`
-- Authentication: API Key (`ApiKeyAuth`)
-- Sandbox and production environments available.
-- Retrieves legal name, trade name, GST registration status and jurisdiction details.
-- Published pricing: Approximately ₹0.05 per API call (subject to confirmation).
-- Sandbox pricing and free usage limits are not specified.
-
-**Decision:** Potential provider. Confirm sandbox access, production pricing and request limits.
-
-### 3.2 GSTVerify
-
-- REST API with API key authentication (`X-API-Key`).
-- Sandbox API key supported.
-- Retrieves GSTIN, legal name, registration status and taxpayer details.
-
-**Published Pricing:**
-- Free: ₹0/month (20 manual verifications/day).
-- Pro: ₹299/month (100 API calls).
-- Business: ₹999/month (1,000 API calls).
-- Additional credits start at ₹0.10 per credit.
-
-**Limitations:**
-- Developer API access under the free plan is unclear.
-- Demo credit eligibility needs confirmation.
-- GSTIN verification does not establish applicant ownership.
-
-**Decision:** Worth evaluating, but confirm API access and actual usage costs.
-
-### 3.3 APIserver.in – GST Verification API
-
-**API Details:**
-- Endpoint: `/v1/gst/verify`
-- Input: GSTIN
-- Output: JSON response
-- Authentication: API key
-- Sandbox and production environments available.
-
-**Information Retrieved:**
-- GSTIN
-- Legal business name
-- Trade name
-- GST registration status
-- Registration date
-- Taxpayer type
-- Registered business address
-
-**Pricing:**
-
-| Parameter | Details |
-|---|---|
-| Base price | ₹0.19 per successful call |
-| GST | 18% |
-| Total price | Approximately ₹0.22 per successful call |
-| Failed calls | Advertised as free |
-| Setup fee | None advertised |
-| Minimum wallet | None advertised |
-
-**Advantages:**
-- Free sandbox advertised for testing.
-- Pay-per-successful-call pricing.
-- No advertised setup fee or annual contract.
-- Additional APIs for PAN, MCA and other verification services.
-
-**Limitations:**
-- Sandbox data may be simulated.
-- Production data accuracy needs testing.
-- Exact rate limits and authentication format should be confirmed.
-- A valid GSTIN does not prove that the applicant represents the business.
-
-**Decision:** APIserver.in was initially preferred because of its advertised free sandbox and pay-per-successful-call pricing. However, since no response has been received regarding API access, GSTIN API (gstinapi.in) is selected as the preferred alternative for evaluation and integration. Final selection depends on successful API-key generation and sandbox testing.
-
-## 4. Proposed HypeKyte Verification Workflow
-
-1. Business registers on HypeKyte and submits its business details and GSTIN.
-2. Backend sends the GSTIN to the selected verification provider.
-3. API returns registered business information.
-4. HypeKyte compares the legal name, trade name, address and GST status with the submitted details.
-5. Google Places API can provide additional supporting evidence.
-6. Phone OTP and business email verification help establish the applicant's association.
-7. Unclear cases are forwarded for manual review.
-8. Verification results and status are stored in the database.
-
-## 5. Important Considerations
-
-- GSTIN verification establishes registration details, not applicant ownership.
-- Google Places provides supporting business information, not legal proof of ownership.
-- Phone OTP confirms access to a phone number, not necessarily business ownership.
-- Business email verification provides additional evidence of association.
-- Authorization documents or manual review may be required when the applicant's association cannot be established automatically.
-
-## 6. Final Recommendation
-
-For the initial HypeKyte implementation:
-
-- **Primary verification:** APIserver.in GST Verification API.
-- **Supporting verification:** Google Places API.
-- **Applicant verification:** Phone OTP and business email verification.
-- **Additional verification:** Manual review and authorization documents when necessary.
-
-Before production integration, test the APIserver.in sandbox, verify the actual response format, confirm production pricing and evaluate the accuracy of returned GST information.
-
-## 7. References
-
-- [APIserver.in](https://apiserver.in/)
-- [APIserver.in Pricing](https://apiserver.in/pricing)
-- [APIserver.in Documentation](https://apiserver.in/docs)
-- [Google Places API Documentation](https://developers.google.com/maps/documentation/places/web-service/overview)
-- [Google Maps Platform Pricing](https://developers.google.com/maps/billing-and-pricing/pricing)
-
-
-## Phone Verification – OTP Providers
-
-### 1. 2Factor
-
-- **Website:** https://www.2factor.in/
-- **Service:** SMS and OTP API
-- **API integration:** REST API; SDKs available for multiple programming languages, including Node.js.
-- **Features:**
-  - Transactional and OTP SMS.
-  - API, dashboard and analytics.
-  - DLT registration assistance.
-  - Growth plan includes priority OTP routes and webhooks.
-
-**Pricing (excluding 18% GST):**
-- Starter: ₹0.15/SMS, up to 100,000 SMS/month.
-- Growth: ₹0.12/SMS, up to 1 million SMS/month.
-- Enterprise: Custom pricing.
-- Starter plan has a "Start Free" option; exact free-credit allowance needs confirmation.
-
-**Integration requirements:**
-- Account signup and API credentials.
-- Check DLT registration and template requirements before production use.
-- Verify OTP API endpoints and free-tier conditions.
-
-### 2. Fast2SMS – Bulk SMS
-
-- **Website:** https://www.fast2sms.com/
-- **Service:** Bulk SMS API with OTP support.
-- **API integration:** REST API.
-- **Features:**
-  - Supports promotional, transactional and OTP SMS.
-  - API and dashboard access.
-  - No setup fee or monthly fee.
-  - Failed messages are refunded according to the provider's policy.
-
-**Pricing (excluding 18% GST):**
-- Starting price: ₹0.25/SMS.
-- Rates decrease with higher recharge amounts, down to ₹0.11/SMS.
-- Example: ₹4,000 recharge provides approximately 19,047 SMS at ₹0.21/SMS.
-- Recharge starts at ₹100.
-- ₹50 free credit on signup.
-- Wallet balance does not expire; the rate is valid for six months.
-
-**Integration requirements:**
-- Account signup and API credentials.
-- Check DLT registration and template requirements.
-- Confirm that signup credits can be used for OTP messages.
-
-### Comparison
-
-| Criteria | 2Factor | Fast2SMS |
+| Provider | Notes | Outcome |
 |---|---|---|
-| Starting price | ₹0.15/SMS | ₹0.25/SMS |
-| Higher-volume price | ₹0.12/SMS | ₹0.11/SMS |
-| Free offer | Start Free option; credits unconfirmed | ₹50 signup credit |
-| OTP support | Yes | Yes |
-| API access | Yes | Yes |
-| DLT assistance | Advertised | Requirements to be confirmed |
-| Monthly fee | Pay-as-you-go option | No monthly fee |
+| **gstinapi.in** | Working key, free credits, free sandbox GSTIN, clear error codes (400/401/402/403/404/429/502), 60 req/min, Python SDK, and the only one with a GST **contact** endpoint | **Chosen** |
+| APIserver.in | Sandbox playground looked good (₹0.19 + GST per success, failures free), but API-key access was never granted | Dropped. Its old sample responses were replaced with real gstinapi.in captures |
+| GSTVerify | ₹299/month for 100 calls; developer access on the free plan unclear | Not pursued |
+| FinAGG `SEARCHGSTIN` | ≈₹0.05/call advertised; sandbox terms unclear | Not pursued |
 
-**Current preference:** 2Factor, because it offers a lower starting price and a dedicated OTP-focused Growth plan. Fast2SMS may become cheaper at higher recharge volumes
+---
 
-## Email Verification – Resend
+## 2. What each source can and cannot prove
 
-- **Website:** https://resend.com/
-- **Service:** Transactional Email API
-- **Purpose:** Send OTPs to users' email addresses to verify email access.
-- **API integration:** REST API and official Node.js SDK.
-- **Documentation:** https://resend.com/docs
+| Evidence | Establishes | Does **not** establish |
+|---|---|---|
+| GST record Active | The legal entity exists and is tax-registered at an address | That the applicant works there |
+| Google listing operating, reviewed | A public, customer-facing presence at a location | Ownership. Anyone can create or suggest a listing |
+| Names/PIN agree across GST and Google | Two independent sources describe the same business | Association |
+| OTP on the **GST-filed** mobile | The applicant controls the contact the business gave the government | Legal authority (it may be the CA's phone) |
+| OTP on the **Google-listed** mobile | The applicant controls the business's public phone | Much, if the number is shared by staff |
+| OTP on the applicant's own number | The applicant is reachable | Anything about the business |
+| Device on-site | The applicant was physically there | Ownership; GPS is spoofable |
 
-### Features
-- Send transactional emails using an API.
-- Supports HTML email templates.
-- Provides Node.js SDK.
-- Supports email verification links and OTP emails.
+Conclusion: no single API proves association. The design leans on **"control a channel that an independent source already
+attributes to the business"**, and sends everything that can't reach that bar to human review instead of auto-rejecting it.
 
-### Pricing – Free Plan
-- 3,000 emails per month.
-- Maximum 100 emails per day.
-- 3 domains.
-- 3 inboxes.
-- Monthly cost: $0.
+---
 
-### Integration Requirements
-- Create a Resend account.
-- Generate an API key.
-- Install the Node.js SDK (`npm install resend`).
-- Store the API key securely in backend environment variables.
-- Verify a sending domain and configure DNS records for production.
+## 3. Live findings from this project
 
-### Integration Difficulty
-- Easy.
-- Provides an official Node.js SDK and straightforward API integration.
-- Suitable for integration with a Node.js/Express backend.
+**gstinapi.in**
+- `GET /v1/gstin/{gstin}?include=profile` returns `success, test, data{legal_name, trade_name, status, taxpayer_type, registration_date,
+  cancellation_date, state_code, address, city, pincode, address_details{…}, nature_of_business, block_status, additional_addresses}`,
+  plus `credits_remaining`. Captured in `backend/samples/gstinapi_lookup_sandbox.json`.
+- `/contact` on the sandbox returns `data.mobile` and `data.email` with `contact_found: true`, `credits_charged: 0`
+  (`samples/gstinapi_contact_sandbox.json`).
+- A not-found GSTIN returns HTTP 404 `{"error": "GSTIN not found in GST database"}` and isn't charged. Bad format returns HTTP 400 with a
+  `fix` hint. Both captured.
+- The demo account had **10 credits** left, so lookups are cached in SQLite for 7 days.
 
-### Selected for Implementation
-Resend is the preferred email provider for HypeKyte because it offers a useful free tier, simple API integration and an official Node.js SDK.
+**Google Places (New)**
+- Autocomplete "Haldiram Murthal" returns the establishment directly. Details give PIN `131039`, state `Haryana`, 4,654 reviews,
+  `businessStatus: OPERATIONAL`.
+- The phone came back as `+91 8071 890 217`, which looks like a mobile (starts with 8) but is a Bangalore `080` landline. Google
+  formats real mobiles as `+91 98765 43210` (5-5), and that grouping is how the app detects landlines.
+- Text Search "Haldiram" near Murthal: **3 listings in PIN 131039**. This is a ready-made live example of scenario 5.
+- Nearby Search at 200 m: the listing is the 4th closest place, behind a hotel, a GST office and an EV charger. That's why the
+  picker sorts name matches first.
 
-The backend will generate OTPs, store them temporarily, enforce expiry and verify the codes entered by users. Resend will only handle email delivery.
+---
 
-**Note:** The `onboarding@resend.dev` sender is intended for testing. A verified custom domain is required for production sending.
+## 4. Proposed production workflow
 
+1. Applicant opens a case; optionally shares location once (Nearby Search picker; distance kept, coordinates dropped).
+2. Picks the Google listing (autocomplete) or says it's not on Maps.
+3. Optional GSTIN: checksum offline, then register lookup (cached), then confirm the registry extract.
+4. Phone: the strongest on-record number (GST `/contact` > Google listing > own), shown masked. The applicant types the hidden digits,
+   then an OTP via a DLT-registered SMS/WhatsApp provider.
+5. Scoring (Exists / Belongs / conflicts) gives VERIFIED / NEEDS REVIEW / UNVERIFIED with a dossier.
+6. NEEDS REVIEW goes to an ops queue (documents: GST certificate, FSSAI licence, utility bill, Google Business Profile access).
+7. Monthly re-checks of GST status and listing status; flag cancellations and closures.
 
+## 5. References
 
-### Google Places API – Test Result
-
-- Successfully tested the Places API (New) Text Search endpoint.
-- **Endpoint:** `POST https://places.googleapis.com/v1/places:searchText`
-- **Test query:** `Haldiram restaurant Sonipat`
-- **Result:** Received 4 matching business listings.
-- **Fields returned:** Place ID, business name, formatted address, phone number (when available), business status, business types, latitude and longitude.
-- **Sample response:** `docs/samples/places_response.json`
-- **Status:** Successful API response received and saved locally.
-- **Usage:** The saved response will be used for mock testing of business matching logic without repeatedly calling Google Places.
-
-**Limitation:** Google Places confirms the existence of a business listing, but does not establish whether the applicant owns or is associated with that business.
-
-
-### GSTIN API – Sandbox Testing Results
-
-Tested the APIserver GST verification endpoint using its public sandbox playground.
-
-**Endpoint:** `POST /v1/gst/verify`
-
-**Successful verification**
-- Returned GSTIN, legal name, trade name, registration status, registration date, PAN and principal business address.
-- Response time: 402 ms.
-- Cost shown: ₹0.22.
-
-**Record not found**
-- Error code: `RECORD_NOT_FOUND`.
-- No matching record returned.
-- Not retryable.
-- No charge.
-
-**Source timeout with fallback**
-- Primary source was degraded, but fallback successfully returned GST details.
-- `source_status`: `degraded`.
-- Attempts: 2.
-- Response time: 781 ms.
-- Cost shown: ₹0.22.
-
-**All sources unavailable**
-- Error code: `PROVIDER_UNAVAILABLE`.
-- Both verification sources were unavailable.
-- Retryable: true.
-- No charge.
-
-**Conclusion:**
-The sandbox demonstrates successful verification, record-not-found handling, fallback handling and provider-unavailable handling. APIserver provides the required GSTIN information for HypeKyte, including legal name, trade name, address and registration status.
-
-The backend should distinguish between an unsuccessful GSTIN lookup and a temporary provider failure. Provider failures should remain pending and be retried rather than automatically rejecting the business.
-
-**Sample responses:**
-- `docs/samples/gstin_response.json`
-- `docs/samples/gstin_not_found_response.json`
-- `docs/samples/gstin_fallback_response.json`
-- `docs/samples/gstin_provider_unavailable_response.json`
+- gstinapi.in: https://www.gstinapi.in/ · docs https://www.gstinapi.in/docs · OpenAPI https://www.gstinapi.in/openapi.json · https://www.gstinapi.in/llms.txt
+- Places API (New) Text Search: https://developers.google.com/maps/documentation/places/web-service/text-search
+- Place data fields and SKUs: https://developers.google.com/maps/documentation/places/web-service/data-fields
+- Autocomplete (New): https://developers.google.com/maps/documentation/places/web-service/place-autocomplete
+- Place types: https://developers.google.com/maps/documentation/places/web-service/place-types
+- Google Maps Platform India pricing FAQ: https://developers.google.com/maps/billing-and-pricing/india
+- Firebase Auth pricing and Blaze requirement: https://firebase.google.com/pricing
+- 2Factor: https://www.2factor.in/ · Fast2SMS: https://www.fast2sms.com/ · Resend: https://resend.com/
+- APIserver.in: https://apiserver.in/

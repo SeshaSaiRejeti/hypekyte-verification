@@ -1,11 +1,29 @@
+# Secrets
 .env
 .env.*
-firebase-admin.json
+!.env.example
+*.pem
+firebase-admin*.json
+
+# Local data
 *.db
+*.sqlite3
+*.log
+
+# Python
 venv/
+.venv/
 __pycache__/
 .pytest_cache/
+
+# Node / build
 node_modules/
 dist/
+.output/
+.vite/
+.tanstack/
+.nitro/
+
+# OS
 .DS_Store
-firebase-admin.json*
+__MACOSX/
