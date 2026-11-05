@@ -1,0 +1,41 @@
+{
+  "success": true,
+  "request_id": "as_req_01M6G1RN66KJBQ76PQM15MSSRT",
+  "api": "gst.verify",
+  "version": "2026-10-01",
+  "data": {
+    "gstin": "29AAJCK4821M1Z1",
+    "legal_name": "KAVERI TEXTILES PRIVATE LIMITED",
+    "trade_name": "Kaveri Textiles",
+    "status": "Active",
+    "registration_date": "2017-07-01",
+    "cancellation_date": null,
+    "taxpayer_type": "Regular",
+    "constitution": "Private Limited Company",
+    "state": "Karnataka",
+    "state_code": "29",
+    "pan": "AAJCK4821M",
+    "principal_place": {
+      "line1": "No. 14, 3rd Cross, Phase II",
+      "locality": "Peenya Industrial Area",
+      "city": "Bengaluru",
+      "district": "Bengaluru Urban",
+      "state": "Karnataka",
+      "pincode": "560058"
+    },
+    "nature_of_business": [
+      "Manufacturing",
+      "Wholesale Business"
+    ],
+    "einvoice_enabled": true
+  },
+  "meta": {
+    "charged": true,
+    "amount_inr": 0.22,
+    "latency_ms": 781,
+    "source_status": "degraded",
+    "attempts": 2,
+    "data_as_of": "2026-11-03T11:31:00+05:30",
+    "mode": "live"
+  }
+}

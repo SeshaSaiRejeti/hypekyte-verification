@@ -1,0 +1,17 @@
+{
+  "success": false,
+  "request_id": "as_req_01M6G1Z04JNJJHXKGW4NRG9RAP",
+  "error": {
+    "code": "PROVIDER_UNAVAILABLE",
+    "type": "provider_error",
+    "message": "All 2 sources for this check are unavailable. You were not charged.",
+    "retryable": true,
+    "docs_url": "/docs/errors#provider_unavailable"
+  },
+  "meta": {
+    "charged": false,
+    "amount_inr": 0,
+    "latency_ms": 445,
+    "attempts": 2
+  }
+}
