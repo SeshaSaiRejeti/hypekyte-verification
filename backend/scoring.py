@@ -309,8 +309,15 @@ def evaluate(state: dict, prior_claims: list[dict] | None = None) -> dict:
     caps = sorted(caps, key=lambda m: -weight.get(m, 0))
     score = max(0, min(100, existence + association - penalty))
 
+    # A registry outage means "couldn't check", never "doesn't exist": hold for review instead.
+    registry_unreachable = bool(gst_error) and gst_error not in (
+        "GSTIN_INVALID_FORMAT", "GSTIN_INVALID_CHECKSUM", "GSTIN_NOT_FOUND")
+
     if hard:
         status, headline = "UNVERIFIED", hard[0]
+    elif existence == 0 and registry_unreachable:
+        status = "NEEDS_REVIEW"
+        headline = "The GST registry could not be reached, so nothing could be checked. Retry, or send for manual review."
     elif existence == 0:
         status = "UNVERIFIED"
         headline = (caps[0] if caps else "No independent source could establish that this business exists.")

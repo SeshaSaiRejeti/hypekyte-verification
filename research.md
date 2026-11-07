@@ -69,8 +69,9 @@ attributes to the business"**, and sends everything that can't reach that bar to
 **Google Places (New)**
 - Autocomplete "Haldiram Murthal" returns the establishment directly. Details give PIN `131039`, state `Haryana`, 4,654 reviews,
   `businessStatus: OPERATIONAL`.
-- The phone came back as `+91 8071 890 217`, which looks like a mobile (starts with 8) but is a Bangalore `080` landline. Google
-  formats real mobiles as `+91 98765 43210` (5-5), and that grouping is how the app detects landlines.
+- The phone came back as `+91 8071 890 217` (national format `08071 890 217`). The leading trunk `0` and the 4-3-3 grouping mark it as a
+  landline-style number. Google formats real mobiles 5-5 (`+91 98765 43210`), and that grouping is how the app decides whether a listed
+  number can receive an SMS. It is a formatting heuristic, so an unusual listing could be misjudged.
 - Text Search "Haldiram" near Murthal: **3 listings in PIN 131039**. This is a ready-made live example of scenario 5.
 - Nearby Search at 200 m: the listing is the 4th closest place, behind a hotel, a GST office and an EV charger. That's why the
   picker sorts name matches first.

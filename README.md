@@ -24,7 +24,7 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env            # then fill in GOOGLE_API_KEY and GSTIN_API_KEY
 uvicorn main:app --port 8000
-pytest tests                      # 20 scenario tests, providers mocked, no credits used
+pytest tests                      # 21 scenario tests, providers mocked, no credits used
 ```
 
 **Frontend** (Node 20+)
@@ -162,7 +162,7 @@ backend/
   database.py        SQLite: sessions, provider cache, verifications
   fixtures/          simulated GST contacts (clearly labelled)
   samples/           real captured gstinapi.in responses
-  tests/             20 scenario and edge-case tests
+  tests/             21 scenario and edge-case tests
 app-builder-studio/  React + TanStack Start frontend
   src/routes/verify.tsx     the step-by-step flow
   src/routes/case.$id.tsx   the result page

@@ -2,7 +2,7 @@
 
 Two kinds of evidence back this document:
 
-- **Automated tests**: `backend/tests/test_scenarios.py`, 20 tests. Google Places and gstinapi.in are replaced by fakes that return
+- **Automated tests**: `backend/tests/test_scenarios.py`, 21 tests. Google Places and gstinapi.in are replaced by fakes that return
   the real response shapes (see `backend/samples/`). Everything else is the production code, called through the HTTP API.
 - **Live UI runs**: `docs/capture_screenshots.py` drives the real app against the live APIs. Screenshots are in `docs/screenshots/`.
   The GST account has only free credits, so live runs use the provider's sandbox GSTIN and free not-found lookups. Real-GSTIN

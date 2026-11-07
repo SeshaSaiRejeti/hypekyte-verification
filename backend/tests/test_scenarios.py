@@ -1,5 +1,7 @@
 """The five assessment scenarios plus fraud / edge cases, end-to-end through the API."""
 
+import gstin as gstin_module
+from config import ApiError
 from conftest import CANCELLED_GSTIN, KAVERI_GSTIN, UNREGISTERED_GSTIN, Flow
 
 
@@ -213,3 +215,16 @@ def test_session_never_exposes_full_phone_numbers(client):
     view = f.confirm()["session"]
     blob = str(view)
     assert "9876543210" not in blob and "98765 43210" not in blob
+
+
+def test_registry_outage_is_held_for_review_not_rejected(client, monkeypatch):
+    """A provider failure means 'could not check', so it must never turn into UNVERIFIED."""
+    def down(url):
+        raise ApiError("PROVIDER_UNAVAILABLE", "The GST registry is temporarily unavailable.", 502)
+
+    monkeypatch.setattr(gstin_module, "_request", down)
+    f = Flow(client, "Kaveri Textiles")
+    assert f.gstin(KAVERI_GSTIN, expect=502)["code"] == "PROVIDER_UNAVAILABLE"
+    r = f.finalize()
+    assert r["status"] == "NEEDS_REVIEW", r["headline"]
+    assert "could not be reached" in r["headline"]

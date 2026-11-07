@@ -22,7 +22,8 @@ HALDIRAM = {"latitude": 29.04845, "longitude": 77.0665, "accuracy": 20}
 
 
 def shot(page: Page, name: str, full: bool = False) -> None:
-    time.sleep(0.7)
+    # Let step transitions, smooth scrolling and any toast from the previous action finish.
+    time.sleep(1.6)
     page.screenshot(path=str(OUT / f"{name}.png"), full_page=full)
     print("  saved", name)
 
@@ -60,7 +61,8 @@ def scenario_onsite_sandbox_gst(page: Page) -> None:
     page.wait_for_selector("text=Are you at the business")
     shot(page, "a1_locate")
     page.click("text=Yes, I'm there")
-    page.wait_for_selector("text=Businesses near you", timeout=20000)
+    # Wait for the list itself: "text=Businesses near you" also matches the loading message.
+    page.wait_for_selector("button:has-text(\"Haldiram's - Murthal\")", timeout=20000)
     shot(page, "a2_nearby")
     page.click("button:has-text(\"Haldiram's - Murthal\")")
     page.wait_for_selector("text=Is this your business?", timeout=20000)
